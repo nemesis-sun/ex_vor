@@ -27,6 +27,7 @@ defmodule ExVor.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:heapq, "~> 0.0.1"}]
+    [ {:heapq, "~> 0.0.1"},
+      {:red_black_tree, github: "nemesis-sun/red_black_tree"} ]
   end
 end

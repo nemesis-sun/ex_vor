@@ -1,1 +1,2 @@
-%{"heapq": {:hex, :heapq, "0.0.1", "399317d1eef774824cfbf8fccfa3d1742a1652dab10e0b5794b0a5c2ebe58810", [:mix], []}}
+%{"heapq": {:hex, :heapq, "0.0.1", "399317d1eef774824cfbf8fccfa3d1742a1652dab10e0b5794b0a5c2ebe58810", [:mix], []},
+  "red_black_tree": {:git, "https://github.com/nemesis-sun/red_black_tree.git", "e9239b6e3289d819d6d12193bf4c0fdcfe717c38", []}}

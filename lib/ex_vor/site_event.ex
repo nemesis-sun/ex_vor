@@ -1,7 +1,7 @@
 defmodule ExVor.SiteEvent do
   defstruct x: nil, y: nil, site: nil
 
-  def new(%ExVor.Site{} = s) do
-    %ExVor.SiteEvent{x: s.x, y: s.y, site: s}
+  def new(%ExVor.Geo.Point{} = p) do
+    %ExVor.SiteEvent{x: p.x, y: p.y, site: p}
   end
 end
