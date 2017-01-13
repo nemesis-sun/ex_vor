@@ -18,7 +18,7 @@ defmodule ExVor.Geo.Parabola do
     %ExVor.Geo.Parabola{a: a, b: b, c: c}
   end
 
-  def new(a: a, b: b, c: c) do
-    %ExVor.Geo.Parabola{a: a, b: b, c: c}
-  end
+  def y_value(%ExVor.Geo.Parabola{a: a, b: b, c: c}, x) do
+    a*:math.pow(x,2) + b*x + c
+  end 
 end
