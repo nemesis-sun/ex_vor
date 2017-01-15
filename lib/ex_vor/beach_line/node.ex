@@ -9,8 +9,22 @@ defmodule ExVor.BeachLine.Node do
     l == nil && r == nil
   end
 
+  def get_leaf_nodes_ordered(%ExVor.BeachLine.Node{} = node) do
+    get_leaf_nodes_ordered_p(node, [])
+  end
+
+  defp get_leaf_nodes_ordered_p(%ExVor.BeachLine.Node{left: nil, right: nil} = node, arc_node_list) do
+    IO.inspect node.data
+    [node | arc_node_list]
+  end
+
+  defp get_leaf_nodes_ordered_p(%ExVor.BeachLine.Node{left: l, right: r} = _node, arc_node_list) do
+    arc_node_list = get_leaf_nodes_ordered_p(r, arc_node_list)
+    get_leaf_nodes_ordered_p(l, arc_node_list)
+  end
+
   @behaviour Access
-  
+
   def fetch(%ExVor.BeachLine.Node{left: l, right: r}, key) do
     case key do
       :left -> {:ok, l}

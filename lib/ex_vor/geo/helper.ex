@@ -16,8 +16,8 @@ defmodule ExVor.Geo.Helper do
         x2 = (-b-:math.sqrt(intersection_check))/(2*a)
         y2 = a1*:math.pow(x2,2) + b1*x2 + c1
         cond do
-          x1>x2 -> {:ok, {%ExVor.Geo.Point{x: x2,y: y2}, %ExVor.Geo.Point{x: x1,y: y1}}}
-          true -> {:ok, {%ExVor.Geo.Point{x: x1,y: y1}, %ExVor.Geo.Point{x: x2,y: y2}}}
+          x1>x2 -> {:ok, %ExVor.Geo.Point{x: x2,y: y2}, %ExVor.Geo.Point{x: x1,y: y1}}
+          true -> {:ok, %ExVor.Geo.Point{x: x1,y: y1}, %ExVor.Geo.Point{x: x2,y: y2}}
         end
       intersection_check == 0 ->
         x = -b/(2*a)

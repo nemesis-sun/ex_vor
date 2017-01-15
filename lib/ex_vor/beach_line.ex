@@ -33,17 +33,24 @@ defmodule ExVor.BeachLine do
 
     %ExVor.BeachLine.BreakPoint{from_site: from_site, to_site: to_site} = data
     sweep_line = ExVor.Geo.HLine.new(y)
-
-    [from_y_val, to_y_val] = [from_site, to_site] |> Enum.map(
-      fn(site) ->
-        ExVor.Geo.Parabola.new(site, sweep_line) 
-        |> ExVor.Geo.Parabola.y_value(x)
-      end)
+    from_parabola = ExVor.Geo.Parabola.new(from_site, sweep_line)
+    to_parabola = ExVor.Geo.Parabola.new(to_site, sweep_line)
+    {:ok, first_break_point, second_break_point} = ExVor.Geo.Helper.parabola_intersection(from_parabola, to_parabola)
 
     cond do
-      from_y_val > to_y_val -> find_covering_arc_node(right, [:right | reversed_path_from_root], site)
-      true -> find_covering_arc_node(left, [:left | reversed_path_from_root], site)
+      x < first_break_point.x -> find_covering_arc_node(left, [:left | reversed_path_from_root], site)
+      x > second_break_point.x -> find_covering_arc_node(right, [:right | reversed_path_from_root], site)
+      true -> 
+        [from_y_val, to_y_val] = [from_parabola, to_parabola] |> Enum.map(fn(p) -> 
+          ExVor.Geo.Parabola.y_value(p, x) 
+        end)
+
+        cond do
+          from_y_val > to_y_val -> find_covering_arc_node(right, [:right | reversed_path_from_root], site)
+          true -> find_covering_arc_node(left, [:left | reversed_path_from_root], site)
+        end
     end
+    
   end
 
   defp break_arc_node(root, path_from_root, 
