@@ -15,6 +15,7 @@ defmodule ExVor.BeachLine do
   def handle_site_event(%ExVor.BeachLine{root: root} = beach_line, 
                         %ExVor.Event.SiteEvent{site: site}) do
     {node, reversed_path_from_root} = find_covering_arc_node(root, [], site)
+    current_neighbour_arcs = find_neighbour_arcs(root, reversed_path_from_root)
     updated_tree = break_arc_node(root, Enum.reverse(reversed_path_from_root), node, site)
     %{beach_line | root: updated_tree}
   end
@@ -74,5 +75,51 @@ defmodule ExVor.BeachLine do
       [] -> first_break_point_node
       _ -> put_in(root, path_from_root, first_break_point_node)
     end
+  end
+
+  defp find_neighbour_arcs(_root, [] = _reversed_path_from_root) do
+    {nil, nil}
+  end
+
+  defp find_neighbour_arcs(root, [leaf_node_side | reversed_parent_path_from_root ] = _reversed_path_from_root) do
+    
+    parent_node = if reversed_parent_path_from_root == [], do: root, else: get_in(root, Enum.reverse(reversed_parent_path_from_root))
+
+    case leaf_node_side do
+      :left ->
+        next_arc_node = ExVor.BeachLine.Node.get_leftmost_child(parent_node.right)
+
+        prev_arc_node_mutual_parent_reversed_path = Enum.drop_while(reversed_parent_path_from_root, fn(dir) -> dir == :left end)
+        prev_arc_node_mutual_parent = case prev_arc_node_mutual_parent_reversed_path do
+          [] -> nil
+          [:right] -> root
+          path -> 
+            [_|path] = path
+            get_in(root, Enum.reverse(path))
+        end
+        prev_arc_node = case prev_arc_node_mutual_parent do
+          nil -> nil
+          node -> ExVor.BeachLine.Node.get_rightmost_child(node.left)
+        end
+        
+        {prev_arc_node, next_arc_node}
+      :right ->
+        prev_arc_node = ExVor.BeachLine.Node.get_rightmost_child(parent_node.left)
+
+        next_arc_node_mutual_parent_reversed_path = Enum.drop_while(reversed_parent_path_from_root, fn(dir) -> dir == :right end)
+        next_arc_node_mutual_parent = case next_arc_node_mutual_parent_reversed_path do
+          [] -> nil
+          [:left] -> root
+          path -> 
+            [_|path] = path
+            get_in(root, Enum.reverse(path))
+        end
+        next_arc_node = case next_arc_node_mutual_parent do
+          nil -> nil
+          node -> ExVor.BeachLine.Node.get_leftmost_child(node.right)
+        end
+        
+        {prev_arc_node, next_arc_node}
+    end 
   end
 end

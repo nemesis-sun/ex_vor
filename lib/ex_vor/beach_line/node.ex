@@ -23,6 +23,22 @@ defmodule ExVor.BeachLine.Node do
     get_leaf_nodes_ordered_p(l, arc_node_list)
   end
 
+  def get_leftmost_child(%ExVor.BeachLine.Node{left: nil, right: nil} = node) do
+    node
+  end
+
+  def get_leftmost_child(%ExVor.BeachLine.Node{left: l}) do
+    get_leftmost_child(l)
+  end
+
+  def get_rightmost_child(%ExVor.BeachLine.Node{left: nil, right: nil} = node) do
+    node
+  end
+
+  def get_rightmost_child(%ExVor.BeachLine.Node{right: r}) do
+    get_rightmost_child(r)
+  end
+
   @behaviour Access
 
   def fetch(%ExVor.BeachLine.Node{left: l, right: r}, key) do
