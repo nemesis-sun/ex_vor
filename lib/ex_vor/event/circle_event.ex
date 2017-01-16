@@ -7,7 +7,7 @@ defmodule ExVor.Event.CircleEvent do
     case ExVor.Geo.Circle.from_points(sites) do
       {:error, _} = err -> err
       {:ok, %ExVor.Geo.Circle{cx: cx, cy: cy, r: r}} -> 
-        %ExVor.Event.CircleEvent{cx: cx, cy: cy, sites: sites, footer_point: {cx, cy-r}}
+        {:ok, %ExVor.Event.CircleEvent{cx: cx, cy: cy, sites: sites, footer_point: {cx, cy-r}}}
     end
   end
 

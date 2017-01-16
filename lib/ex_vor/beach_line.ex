@@ -9,15 +9,18 @@ defmodule ExVor.BeachLine do
                         %ExVor.Event.SiteEvent{site: site}) do
     arc = ExVor.BeachLine.Arc.new(site)
     root = ExVor.BeachLine.Node.new(arc)
-    %{beach_line | root: root}
+    { %{beach_line | root: root},
+      nil }
   end
 
   def handle_site_event(%ExVor.BeachLine{root: root} = beach_line, 
                         %ExVor.Event.SiteEvent{site: site}) do
     {node, reversed_path_from_root} = find_covering_arc_node(root, [], site)
-    current_neighbour_arcs = find_neighbour_arcs(root, reversed_path_from_root)
+    {prev_arc_node, next_arc_node} = find_neighbour_arcs(root, reversed_path_from_root)
     updated_tree = break_arc_node(root, Enum.reverse(reversed_path_from_root), node, site)
-    %{beach_line | root: updated_tree}
+    cc_events = update_circle_events_on_arc_break(site, node, prev_arc_node, next_arc_node)
+    { %{beach_line | root: updated_tree},
+      cc_events }
   end
 
   # terminating case, leaf node aka arc encoutered
@@ -121,5 +124,52 @@ defmodule ExVor.BeachLine do
         
         {prev_arc_node, next_arc_node}
     end 
+  end
+
+  defp update_circle_events_on_arc_break(_, _, nil, nil) do
+    {nil, nil}
+  end
+
+  defp update_circle_events_on_arc_break(%ExVor.Geo.Point{} = site,
+                                        %ExVor.BeachLine.Node{data: covering_arc} = _covering_arc_node,
+                                        %ExVor.BeachLine.Node{data: prev_arc} = _prev_arc_node,
+                                        nil) do
+    case ExVor.Event.CircleEvent.new({prev_arc.site, covering_arc.site, site}) do
+      {:error, _} -> {nil, nil}
+      {:ok, event} -> {[event], nil}
+    end
+  end
+
+  defp update_circle_events_on_arc_break(%ExVor.Geo.Point{} = site,
+                                        %ExVor.BeachLine.Node{data: covering_arc} = _covering_arc_node,
+                                        nil, 
+                                        %ExVor.BeachLine.Node{data: next_arc} = _next_arc_node) do
+    case ExVor.Event.CircleEvent.new({site, covering_arc.site, next_arc.site}) do
+      {:error, _} -> {nil, nil}
+      {:ok, event} -> {[event], nil}
+    end
+  end
+
+  defp update_circle_events_on_arc_break(%ExVor.Geo.Point{} = site,
+                                        %ExVor.BeachLine.Node{data: covering_arc} = _covering_arc_node,
+                                        %ExVor.BeachLine.Node{data: prev_arc} = _prev_arc_node,
+                                        %ExVor.BeachLine.Node{data: next_arc} = _next_arc_node) do
+    site_triplets = [{prev_arc.site, covering_arc.site, site}, {site, covering_arc.site, next_arc.site}]
+    circle_events = site_triplets
+    |> Enum.map(fn(sites) ->
+      case ExVor.Event.CircleEvent.new(sites) do
+        {:error, _} -> nil
+        {:ok, event} -> event
+      end
+    end)
+    |> Enum.reject(fn(e)->
+      is_nil(e)
+    end)
+    removed_circle_event = case ExVor.Event.CircleEvent.new({prev_arc.site, covering_arc.site, next_arc.site}) do
+      {:error, _} -> nil
+      {:ok, event} -> event
+    end
+
+    {circle_events, removed_circle_event}
   end
 end

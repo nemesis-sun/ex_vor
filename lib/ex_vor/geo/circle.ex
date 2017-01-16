@@ -55,7 +55,10 @@ defmodule ExVor.Geo.Circle do
   defp valid_points?({s1, s2, s3}) do
     cond do
       s1.x == s2.x && s2.x== s3.x -> false # collinear, verticle line => invalid
-      (s1.y - s2.y)/(s1.x - s2.x) == (s1.y - s3.y)/(s1.x - s3.x) -> false # collinear, other cases => invalid
+      (s1.x == s2.x) && (s1.y == s2.y) -> false
+      (s1.x == s3.x) && (s1.y == s3.y) -> false
+      (s3.x == s2.x) && (s3.y == s2.y) -> false
+      (s1.x != s2.x) && (s1.x != s3.x) && (s1.y - s2.y)/(s1.x - s2.x) == (s1.y - s3.y)/(s1.x - s3.x) -> false # collinear, other cases => invalid
       true -> true # otherwise, valid
     end
   end
