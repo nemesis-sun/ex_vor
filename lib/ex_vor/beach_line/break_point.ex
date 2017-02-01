@@ -7,4 +7,9 @@ defmodule ExVor.BeachLine.BreakPoint do
   def new(%ExVor.Geo.Point{}=from_site, %ExVor.Geo.Point{}=to_site) do
     %ExVor.BeachLine.BreakPoint{from_site: from_site, to_site: to_site}
   end
+
+  def id(%ExVor.BeachLine.BreakPoint{ from_site: %ExVor.Geo.Point{} = f,
+                                      to_site: %ExVor.Geo.Point{} = t }) do
+    "#{f.label}|#{t.label}"
+  end
 end

@@ -24,7 +24,8 @@ defmodule ExVor.BeachLine do
   end
 
   def handle_circle_event(%ExVor.BeachLine{root: root} = beach_line,
-                          %ExVor.Event.CircleEvent{sites: sites, circle: circle}) do
+                          %ExVor.Event.CircleEvent{sites: sites, circle: circle, footer_point: footer_point} = cc_event) do
+
     {beach_line, {nil, nil}}
   end
 
@@ -137,7 +138,7 @@ defmodule ExVor.BeachLine do
                                         nil) do
     case ExVor.Event.CircleEvent.new({prev_arc.site, covering_arc.site, site}) do
       {:error, _} -> {nil, nil}
-      {:ok, event} -> {[event], nil}
+      {:ok, event} -> if valid_circle_event?(event, site), do: {[event], nil}, else: {nil, nil}
     end
   end
 
@@ -147,7 +148,7 @@ defmodule ExVor.BeachLine do
                                         %ExVor.BeachLine.Node{data: next_arc} = _next_arc_node) do
     case ExVor.Event.CircleEvent.new({site, covering_arc.site, next_arc.site}) do
       {:error, _} -> {nil, nil}
-      {:ok, event} -> {[event], nil}
+      {:ok, event} -> if valid_circle_event?(event, site), do: {[event], nil}, else: {nil, nil}
     end
   end
 
@@ -156,7 +157,7 @@ defmodule ExVor.BeachLine do
                                         %ExVor.BeachLine.Node{data: prev_arc} = _prev_arc_node,
                                         %ExVor.BeachLine.Node{data: next_arc} = _next_arc_node) do
     site_triplets = case prev_arc.site.label == next_arc.site.label do
-      true -> [{prev_arc.site, covering_arc.site, site}]
+      true -> [resolve_circle_triplet_order(site, covering_arc.site, prev_arc.site)]
       false -> [{prev_arc.site, covering_arc.site, site}, {site, covering_arc.site, next_arc.site}]
     end
 
@@ -168,12 +169,28 @@ defmodule ExVor.BeachLine do
       end
     end)
     |> Enum.reject(&is_nil/1)
+    |> Enum.filter(&(valid_circle_event?(&1, site)))
 
-    removed_circle_event = case ExVor.Event.CircleEvent.new({prev_arc.site, covering_arc.site, next_arc.site}) do
+    false_circle_event = case ExVor.Event.CircleEvent.new({prev_arc.site, covering_arc.site, next_arc.site}) do
       {:error, _} -> nil
       {:ok, event} -> event
     end
 
-    {new_circle_events, removed_circle_event}
+    {new_circle_events, false_circle_event}
+  end
+
+  defp valid_circle_event?(%ExVor.Event.CircleEvent{footer_point: {_ev_x, ev_y}}, %ExVor.Geo.Point{y: y}) do
+    ev_y < y
+  end
+
+  defp resolve_circle_triplet_order(new_arc_site, covering_arc_site, covering_covering_arc_site) do
+    case ExVor.Event.CircleEvent.new({new_arc_site, covering_arc_site, covering_covering_arc_site}) do
+      {:error, _} -> {new_arc_site, covering_arc_site, covering_covering_arc_site} # doesn't matter, consequentially no circle event
+      {:ok, %ExVor.Event.CircleEvent{circle: %ExVor.Geo.Circle{cx: cx, cy: _cy}}} ->
+        case cx > new_arc_site.x do
+          true -> {new_arc_site, covering_arc_site, covering_covering_arc_site}
+          false -> {covering_covering_arc_site, covering_arc_site, new_arc_site}
+        end
+    end
   end
 end
