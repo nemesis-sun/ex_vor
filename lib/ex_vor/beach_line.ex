@@ -25,8 +25,16 @@ defmodule ExVor.BeachLine do
 
   def handle_circle_event(%ExVor.BeachLine{root: root} = beach_line,
                           %ExVor.Event.CircleEvent{sites: sites, circle: circle, footer_point: footer_point} = cc_event) do
-
-    {beach_line, {nil, nil}}
+    {left_bp_reversed_path, right_bp_reversed_path} = find_converging_breakpoints(cc_event, beach_line)
+    {lower_bp_reversed_path, upper_bp_reversed_path} = if length(left_bp_reversed_path) > length(right_bp_reversed_path) do
+      {left_bp_reversed_path, right_bp_reversed_path}
+    else
+      {right_bp_reversed_path, left_bp_reversed_path}
+    end
+    {prev_arc_site, reduced_arc_site, next_arc_site} = sites
+    new_beach_line = update_lower_breakpoint_node(beach_line, lower_bp_reversed_path, reduced_arc_site)
+    new_beach_line = update_upper_breakpoint_node(new_beach_line, upper_bp_reversed_path, prev_arc_site, next_arc_site)
+    {new_beach_line, {nil, nil}}
   end
 
   # terminating case, leaf node aka arc encoutered
@@ -192,5 +200,64 @@ defmodule ExVor.BeachLine do
           false -> {covering_covering_arc_site, covering_arc_site, new_arc_site}
         end
     end
+  end
+
+  defp find_converging_breakpoints(%ExVor.Event.CircleEvent{sites: {prev_arc_site, reduced_arc_site, next_arc_site}} = cc_event,
+                                  %ExVor.BeachLine{root: root} = _beach_line) do
+    left_breakpoint = ExVor.BeachLine.BreakPoint.new(prev_arc_site, reduced_arc_site)
+    right_breakpoint = ExVor.BeachLine.BreakPoint.new(reduced_arc_site, next_arc_site)
+    left_bp_reversed_path = find_breakpoint_path(left_breakpoint, cc_event, root, [])
+    right_bp_reversed_path = find_breakpoint_path(right_breakpoint, cc_event, root, [])
+    {left_bp_reversed_path, right_bp_reversed_path}
+  end
+
+  defp find_breakpoint_path(%ExVor.BeachLine.BreakPoint{} = target_bp,
+                            %ExVor.Event.CircleEvent{} = cc_event,
+                            %ExVor.BeachLine.Node{} = current_node,
+                            current_path) do
+    %ExVor.BeachLine.Node{data: %ExVor.BeachLine.BreakPoint{} = bp} = current_node
+    if ExVor.BeachLine.BreakPoint.equal?(target_bp, bp) do
+      current_path
+    else
+      %ExVor.Event.CircleEvent{footer_point: {_fx, fy}, sites: {prev_site, _reduced_site, next_site}, circle: cc} = cc_event
+      sweep_line_position = if prev_site.y > next_site.y, do: (next_site.y+fy)/2, else: (prev_site.y+fy)/2
+      target_bp_coordinates = breakpoint_coordinates(target_bp, sweep_line_position)
+      bp_coordinates = breakpoint_coordinates(bp, sweep_line_position)
+      if target_bp_coordinates.x > bp_coordinates.x do
+        find_breakpoint_path(target_bp, cc_event, current_node.right, [:right | current_path])
+      else
+        find_breakpoint_path(target_bp, cc_event, current_node.left, [:left | current_path])
+      end
+    end
+  end
+
+  defp breakpoint_coordinates(%ExVor.BeachLine.BreakPoint{} = bp, sweep_line_position) do
+    %ExVor.BeachLine.BreakPoint{from_site: from_site, to_site: to_site} = bp
+    sweep_line = ExVor.Geo.HLine.new(sweep_line_position)
+    from_site_para = ExVor.Geo.Parabola.new(from_site, sweep_line)
+    to_site_para = ExVor.Geo.Parabola.new(to_site, sweep_line)
+    {:ok, first_intersection, second_intersection} = ExVor.Geo.Helper.parabola_intersection(from_site_para, to_site_para)
+    if from_site.y > to_site.y, do: first_intersection, else: second_intersection
+  end
+
+  defp update_lower_breakpoint_node(%ExVor.BeachLine{root: root} = beach_line, reversed_bp_path, reduced_arc_site) do
+    [bp_node_path|reversed_parent_path] = reversed_bp_path
+    parent_path = Enum.reverse(reversed_parent_path)
+    parent_node = if parent_path == [], do: root, else: get_in(root, parent_path)
+    bp_node = parent_node[bp_node_path]
+    %ExVor.BeachLine.BreakPoint{from_site: from_site, to_site: to_site} = bp_node.data
+    non_reduced_bp_child_node = if from_site.label == reduced_arc_site.label, do: bp_node.right, else: bp_node.left
+    parent_node = put_in(parent_node, [bp_node_path], non_reduced_bp_child_node)
+    new_root = if parent_path == [], do: parent_node, else: put_in(root, parent_path, parent_node)
+    %{beach_line | root: new_root}
+  end
+
+  defp update_upper_breakpoint_node(%ExVor.BeachLine{root: root} = beach_line, reversed_bp_path, prev_arc_site, next_arc_site) do
+    bp_path = Enum.reverse(reversed_bp_path)
+    bp_node = if bp_path == [], do: root, else: get_in(root, bp_path)
+    new_bp = ExVor.BeachLine.BreakPoint.new(prev_arc_site, next_arc_site)
+    new_bp_node = ExVor.BeachLine.Node.new(new_bp, bp_node.left, bp_node.right)
+    new_root = if bp_path == [], do: new_bp_node, else: put_in(root, bp_path, new_bp_node)
+    %{beach_line | root: new_root}
   end
 end

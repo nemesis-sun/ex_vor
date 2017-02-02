@@ -12,4 +12,8 @@ defmodule ExVor.BeachLine.BreakPoint do
                                       to_site: %ExVor.Geo.Point{} = t }) do
     "#{f.label}|#{t.label}"
   end
+
+  def equal?(%ExVor.BeachLine.BreakPoint{} = bp1, %ExVor.BeachLine.BreakPoint{} = bp2) do
+    id(bp1) == id(bp2)
+  end
 end
