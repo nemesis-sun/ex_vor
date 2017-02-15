@@ -1,5 +1,6 @@
 defmodule ExVor do
   defstruct beach_line: ExVor.BeachLine.new, event_queue: ExVor.EventQueue.new
+  use ExVor.Logger
 
   def new do
     %ExVor{}
@@ -24,6 +25,7 @@ defmodule ExVor do
     case ExVor.EventQueue.pop(event_queue) do
       {:error, _queue} -> beach_line
       {:ok, new_queue, next_event} ->
+        debug "processing next event #{inspect(next_event)}"
         {new_beach_line, cc_event_updates} = case next_event do
           %ExVor.Event.SiteEvent{} -> ExVor.BeachLine.handle_site_event(beach_line, next_event)
           %ExVor.Event.CircleEvent{} -> ExVor.BeachLine.handle_circle_event(beach_line, next_event)
