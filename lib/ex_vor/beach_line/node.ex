@@ -1,55 +1,56 @@
 defmodule ExVor.BeachLine.Node do
   defstruct data: nil, left: nil, right: nil
+  alias __MODULE__
 
   def new(data, left \\ nil, right \\ nil) do
-    %ExVor.BeachLine.Node{data: data, left: left, right: right}
+    %Node{data: data, left: left, right: right}
   end
 
-  def is_leaf?(%ExVor.BeachLine.Node{left: l, right: r}) do
+  def is_leaf?(%Node{left: l, right: r}) do
     l == nil && r == nil
   end
 
-  def get_leaf_nodes_ordered(%ExVor.BeachLine.Node{} = node) do
+  def get_leaf_nodes_ordered(%Node{} = node) do
     get_leaf_nodes_ordered_p(node, [])
   end
 
-  defp get_leaf_nodes_ordered_p(%ExVor.BeachLine.Node{left: nil, right: nil} = node, arc_node_list) do
+  defp get_leaf_nodes_ordered_p(%Node{left: nil, right: nil} = node, arc_node_list) do
     IO.inspect node.data
     [node | arc_node_list]
   end
 
-  defp get_leaf_nodes_ordered_p(%ExVor.BeachLine.Node{left: l, right: r} = _node, arc_node_list) do
+  defp get_leaf_nodes_ordered_p(%Node{left: l, right: r} = _node, arc_node_list) do
     arc_node_list = get_leaf_nodes_ordered_p(r, arc_node_list)
     get_leaf_nodes_ordered_p(l, arc_node_list)
   end
 
-  def get_leftmost_child(%ExVor.BeachLine.Node{} = node) do
+  def get_leftmost_child(%Node{} = node) do
     get_leftmost_child(node, [])
   end
 
-  def get_leftmost_child(%ExVor.BeachLine.Node{left: nil, right: nil} = node, path) do
+  def get_leftmost_child(%Node{left: nil, right: nil} = node, path) do
     {node, path}
   end
 
-  def get_leftmost_child(%ExVor.BeachLine.Node{left: l}, path) do
+  def get_leftmost_child(%Node{left: l}, path) do
     get_leftmost_child(l, [:left | path])
   end
 
-  def get_rightmost_child(%ExVor.BeachLine.Node{} = node) do
+  def get_rightmost_child(%Node{} = node) do
     get_rightmost_child(node, [])
   end
 
-  def get_rightmost_child(%ExVor.BeachLine.Node{left: nil, right: nil} = node, path) do
+  def get_rightmost_child(%Node{left: nil, right: nil} = node, path) do
     {node, path}
   end
 
-  def get_rightmost_child(%ExVor.BeachLine.Node{right: r}, path) do
+  def get_rightmost_child(%Node{right: r}, path) do
     get_rightmost_child(r, [:right | path])
   end
 
   @behaviour Access
 
-  def fetch(%ExVor.BeachLine.Node{left: l, right: r}, key) do
+  def fetch(%Node{left: l, right: r}, key) do
     case key do
       :left -> {:ok, l}
       :right -> {:ok, r}
@@ -57,14 +58,14 @@ defmodule ExVor.BeachLine.Node do
     end
   end
 
-  def get(%ExVor.BeachLine.Node{} = node, key, default) do
+  def get(%Node{} = node, key, default) do
     case fetch(node, key) do
       {:ok, value} -> value
       :error -> default
     end
   end
 
-  def get_and_update(%ExVor.BeachLine.Node{} = node, key, cb) do
+  def get_and_update(%Node{} = node, key, cb) do
     value = fetch(node, key)
     cb_value = case value do
       {:ok, value} -> cb.(value)
@@ -81,7 +82,7 @@ defmodule ExVor.BeachLine.Node do
     end
   end
 
-  def pop(%ExVor.BeachLine.Node{} = node, key) do
+  def pop(%Node{} = node, key) do
     case fetch(node, key) do
       {:ok, value} ->
         new_node = %{node | key => nil}

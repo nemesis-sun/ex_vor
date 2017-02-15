@@ -1,8 +1,10 @@
 defmodule ExVor.Geo.Parabola do
   defstruct a: nil, b: nil, c: nil
+  alias ExVor.Geo.{Point, HLine}
+  alias __MODULE__
 
   # get new parabola given focus and horizontal directrix
-  def new(%ExVor.Geo.Point{x: f_x, y: f_y}, %ExVor.Geo.HLine{y: d_y}) do
+  def new(%Point{x: f_x, y: f_y}, %HLine{y: d_y}) do
     # (x - v_x)^2 = 4p(y-v_y)
     # where (v_x, v_y) is the vertex
     # p is the distance from vertex to focus/directrix
@@ -15,10 +17,10 @@ defmodule ExVor.Geo.Parabola do
     b = -v_x/(2*p)
     c = (:math.pow(v_x,2)+4*p*v_y)/(4*p)
 
-    %ExVor.Geo.Parabola{a: a, b: b, c: c}
+    %Parabola{a: a, b: b, c: c}
   end
 
-  def y_value(%ExVor.Geo.Parabola{a: a, b: b, c: c}, x) do
+  def y_value(%Parabola{a: a, b: b, c: c}, x) do
     a*:math.pow(x,2) + b*x + c
-  end 
+  end
 end
