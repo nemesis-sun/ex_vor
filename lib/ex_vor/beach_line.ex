@@ -27,11 +27,8 @@ defmodule ExVor.BeachLine do
 
     cc_events = update_circle_events_on_arc_break(site, covering_arc_node, prev_arc_node, next_arc_node)
 
-    debug "SiteEvent updates: #{inspect(site_event)}"
-    debug "New circle events:"
-    debug inspect(elem(cc_events, 0))
-    debug "False circle events:"
-    debug inspect(elem(cc_events, 1))
+    debug "Updates for #{site_event}"
+    print_update_cc_events_debug_message(cc_events)
     debug "----------"
 
     {new_beach_line, cc_events}
@@ -55,11 +52,8 @@ defmodule ExVor.BeachLine do
 
     new_cc_events = new_circle_events_on_arc_reduce(new_beach_line, upper_bp_reversed_path, cc_event)
 
-    debug "CircleEvent updates: #{inspect(cc_event)}"
-    debug "New circle events:"
-    debug inspect(new_cc_events)
-    debug "False circle events:"
-    debug inspect(false_cc_events)
+    debug "Updates: #{cc_event}"
+    print_update_cc_events_debug_message({new_cc_events, false_cc_events})
     debug "----------"
 
     {new_beach_line, {new_cc_events, false_cc_events}}
@@ -349,5 +343,16 @@ defmodule ExVor.BeachLine do
       end
     end)
     |> Enum.reject(&is_nil/1)
+  end
+
+  defp print_update_cc_events_debug_message({new_cc_events, false_cc_events}) do
+    debug "New circle events:"
+    unless new_cc_events == nil do
+      Enum.each(new_cc_events, &debug/1)
+    end
+    debug "False circle events:"
+    unless false_cc_events == nil do
+      Enum.each(false_cc_events, &debug/1)
+    end
   end
 end

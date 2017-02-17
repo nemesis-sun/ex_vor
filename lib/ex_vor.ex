@@ -27,7 +27,7 @@ defmodule ExVor do
     case EventQueue.pop(event_queue) do
       {:error, _queue} -> beach_line
       {:ok, new_queue, next_event} ->
-        debug "processing next event #{inspect(next_event)}"
+        debug "processing next event #{next_event}"
         {new_beach_line, {new_cc_events, false_cc_events}} = case next_event do
           %SiteEvent{} -> BeachLine.handle_site_event(beach_line, next_event)
           %CircleEvent{} -> BeachLine.handle_circle_event(beach_line, next_event)

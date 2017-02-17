@@ -16,4 +16,11 @@ defmodule ExVor.Event.CircleEvent do
     |> Enum.map(&(Map.get(&1,:label)))
     |> Enum.join("|")
   end
+
+end
+
+defimpl String.Chars, for: ExVor.Event.CircleEvent do
+  def to_string(cc_event) do
+    "CircleEvent[#{ExVor.Event.CircleEvent.id(cc_event)}] - #{inspect cc_event.footer_point}"
+  end
 end

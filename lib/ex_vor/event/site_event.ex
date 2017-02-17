@@ -5,3 +5,9 @@ defmodule ExVor.Event.SiteEvent do
     %ExVor.Event.SiteEvent{site: p}
   end
 end
+
+defimpl String.Chars, for: ExVor.Event.SiteEvent do
+  def to_string(s_event) do
+    "SiteEvent[#{s_event.site.label}] - {#{s_event.site.x}, #{s_event.site.y}}"
+  end
+end
