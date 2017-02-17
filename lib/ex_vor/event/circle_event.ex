@@ -10,4 +10,10 @@ defmodule ExVor.Event.CircleEvent do
     end
   end
 
+  def id(%ExVor.Event.CircleEvent{sites: sites}) do
+    sites
+    |> Tuple.to_list
+    |> Enum.map(&(Map.get(&1,:label)))
+    |> Enum.join("|")
+  end
 end

@@ -222,7 +222,8 @@ defmodule ExVor.BeachLine do
     {new_circle_events, false_circle_event}
   end
 
-  defp valid_circle_event?(%CircleEvent{footer_point: {_ev_x, ev_y}}, %Point{y: y}) do
+  defp valid_circle_event?(%CircleEvent{footer_point: {_ev_x, ev_y}} = cc_event, %Point{y: y}) do
+    debug "CE #{CircleEvent.id(cc_event)} valid?: #{ev_y < y}"
     ev_y < y
   end
 
@@ -243,6 +244,7 @@ defmodule ExVor.BeachLine do
     right_breakpoint = BreakPoint.new(reduced_arc_site, next_arc_site)
     left_bp_reversed_path = find_breakpoint_path(left_breakpoint, cc_event, root, [])
     right_bp_reversed_path = find_breakpoint_path(right_breakpoint, cc_event, root, [])
+    debug "CE: converging breakpoints #{BreakPoint.id(left_breakpoint)} & #{BreakPoint.id(right_breakpoint)}"
     {left_bp_reversed_path, right_bp_reversed_path}
   end
 
