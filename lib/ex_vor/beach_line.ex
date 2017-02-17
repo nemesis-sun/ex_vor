@@ -19,13 +19,20 @@ defmodule ExVor.BeachLine do
   end
 
   def handle_site_event(%BeachLine{root: root} = beach_line,
-                        %SiteEvent{site: site}) do
+                        %SiteEvent{site: site} = site_event) do
     {covering_arc_node, reversed_path_from_root} = find_covering_arc_node(root, [], site)
     {prev_arc_node, next_arc_node} = find_neighbour_arcs(root, reversed_path_from_root)
 
     new_beach_line = break_arc_node(beach_line, Enum.reverse(reversed_path_from_root), covering_arc_node, site)
 
     cc_events = update_circle_events_on_arc_break(site, covering_arc_node, prev_arc_node, next_arc_node)
+
+    debug "SiteEvent updates: #{inspect(site_event)}"
+    debug "New circle events:"
+    debug inspect(elem(cc_events, 0))
+    debug "False circle events:"
+    debug inspect(elem(cc_events, 1))
+    debug "----------"
 
     {new_beach_line, cc_events}
   end
@@ -40,13 +47,22 @@ defmodule ExVor.BeachLine do
     end
     {prev_arc_site, reduced_arc_site, next_arc_site} = sites
 
+    false_cc_events = false_circle_events_on_arc_reduce(beach_line, {left_bp_reversed_path, right_bp_reversed_path})
+
     new_beach_line = beach_line
     |> update_lower_breakpoint_node(lower_bp_reversed_path, reduced_arc_site)
     |> update_upper_breakpoint_node(upper_bp_reversed_path, prev_arc_site, next_arc_site)
 
-    cc_events = update_circle_events_on_arc_reduce(new_beach_line, upper_bp_reversed_path, cc_event)
+    new_cc_events = new_circle_events_on_arc_reduce(new_beach_line, upper_bp_reversed_path, cc_event)
 
-    {new_beach_line, cc_events}
+    debug "CircleEvent updates: #{inspect(cc_event)}"
+    debug "New circle events:"
+    debug inspect(new_cc_events)
+    debug "False circle events:"
+    debug inspect(false_cc_events)
+    debug "----------"
+
+    {new_beach_line, {new_cc_events, false_cc_events}}
   end
 
   # terminating case, leaf node aka arc encoutered
@@ -200,7 +216,7 @@ defmodule ExVor.BeachLine do
 
     false_circle_event = case CircleEvent.new({prev_arc.site, covering_arc.site, next_arc.site}) do
       {:error, _} -> nil
-      {:ok, event} -> event
+      {:ok, event} -> [event]
     end
 
     {new_circle_events, false_circle_event}
@@ -280,11 +296,11 @@ defmodule ExVor.BeachLine do
     %{beach_line | root: new_root}
   end
 
-  defp update_circle_events_on_arc_reduce(%BeachLine{root: root} = beach_line,
+  defp new_circle_events_on_arc_reduce(%BeachLine{root: root} = beach_line,
                                           reversed_bp_path,
                                           %CircleEvent{footer_point: {fx, fy}}) do
     {from_arc, to_arc} = find_connecting_arcs(beach_line, reversed_bp_path)
-    new_circle_events = [from_arc, to_arc]
+    [from_arc, to_arc]
     |> Enum.map(fn({%Node{} = arc_node, reversed_path}) ->
       case find_neighbour_arcs(root, reversed_path) do
         {nil, nil} -> nil
@@ -301,7 +317,6 @@ defmodule ExVor.BeachLine do
       end
     end)
     |> Enum.reject(&is_nil/1)
-    {new_circle_events, nil}
   end
 
   defp find_connecting_arcs(%BeachLine{root: root} = beach_line, reversed_bp_path) do
@@ -310,5 +325,27 @@ defmodule ExVor.BeachLine do
     {from_arc_node, from_arc_reversed_path} = Node.get_rightmost_child(bp_node.left)
     {to_arc_node, to_arc_reversed_path} = Node.get_leftmost_child(bp_node.right)
     {{from_arc_node, from_arc_reversed_path ++ [:left] ++ reversed_bp_path}, {to_arc_node, to_arc_reversed_path ++ [:right] ++ reversed_bp_path}}
+  end
+
+  defp false_circle_events_on_arc_reduce(%BeachLine{root: root} = beach_line, {left_bp_reversed_path, right_bp_reversed_path}) do
+    {{_, left_bp_from_arc_rev_path}, {_, _}} = find_connecting_arcs(beach_line, left_bp_reversed_path)
+    {{_, _}, {_, right_bp_to_arc_rev_path}} = find_connecting_arcs(beach_line, right_bp_reversed_path)
+    [left_bp_from_arc_rev_path, right_bp_to_arc_rev_path]
+    |> Enum.map(fn(arc_rev_path) ->
+      case find_neighbour_arcs(root, arc_rev_path) do
+        {nil, nil} -> nil
+        {nil, _} -> nil
+        {_, nil} -> nil
+        {prev_arc_node, next_arc_node} ->
+          %Node{data: %Arc{site: prev_arc_site}} = prev_arc_node
+          %Node{data: %Arc{site: next_arc_site}} = next_arc_node
+          %Node{data: %Arc{site: arc_site}} = get_in(root, Enum.reverse(arc_rev_path))
+          case CircleEvent.new({prev_arc_site, arc_site, next_arc_site}) do
+            {:ok, %CircleEvent{} = cc_event} -> cc_event
+            {:error, _} -> nil
+          end
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
   end
 end

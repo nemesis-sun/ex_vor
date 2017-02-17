@@ -28,17 +28,13 @@ defmodule ExVor do
       {:error, _queue} -> beach_line
       {:ok, new_queue, next_event} ->
         debug "processing next event #{inspect(next_event)}"
-        {new_beach_line, cc_event_updates} = case next_event do
+        {new_beach_line, {new_cc_events, false_cc_events}} = case next_event do
           %SiteEvent{} -> BeachLine.handle_site_event(beach_line, next_event)
           %CircleEvent{} -> BeachLine.handle_circle_event(beach_line, next_event)
         end
-        new_queue = case cc_event_updates do
-          {nil, nil} -> new_queue
-          {new_events, false_event} ->
-            queue_with_new_events = Enum.reduce(new_events, new_queue, &(EventQueue.push(&2, &1)))
-            unless false_event == nil, do: EventQueue.remove_false_circle_event(queue_with_new_events, false_event), else: queue_with_new_events
-        end
-        process(%{ex_vor | event_queue: new_queue, beach_line: new_beach_line})
+        queue_with_new_events = unless new_cc_events == nil, do: Enum.reduce(new_cc_events, new_queue, &(EventQueue.push(&2, &1))), else: new_queue
+        queue_without_false_events = unless false_cc_events == nil, do: Enum.reduce(false_cc_events, queue_with_new_events, &(EventQueue.remove_false_circle_event(&2, &1))), else: queue_with_new_events
+        process(%{ex_vor | event_queue: queue_without_false_events, beach_line: new_beach_line})
     end
   end
 end
