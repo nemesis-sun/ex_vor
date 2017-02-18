@@ -216,9 +216,31 @@ defmodule ExVor.BeachLine do
     {new_circle_events, false_circle_event}
   end
 
-  defp valid_circle_event?(%CircleEvent{footer_point: {_ev_x, ev_y}} = cc_event, %Point{y: y}) do
-    debug "CE #{CircleEvent.id(cc_event)} valid?: #{ev_y < y}"
-    ev_y < y
+  defp valid_circle_event?(%CircleEvent{footer_point: {_ev_x, ev_y},
+                                        sites: {prev_arc_site, reduced_arc_site, next_arc_site}} = cc_event, %Point{y: y}) do
+    valid = ev_y < y && 
+            breakpoints_converge?(BreakPoint.new(prev_arc_site, reduced_arc_site), BreakPoint.new(reduced_arc_site, next_arc_site), ev_y)
+    debug "CE #{CircleEvent.id(cc_event)} valid?: #{valid}"
+    valid
+  end
+
+  defp breakpoints_converge?(%BreakPoint{from_site: prev_arc_site, to_site: reduced_arc_site} = left_breakpoint, 
+                              %BreakPoint{to_site: next_arc_site} = right_breakpoint,
+                              supposed_converging_y) do
+    lowest_focus_y = [prev_arc_site, reduced_arc_site, next_arc_site]
+    |> Enum.map(fn(%Point{y: y}) -> y end)
+    |> Enum.sort
+    |> List.first
+    y_diff = lowest_focus_y - supposed_converging_y
+    [before_distance, after_distance] = [lowest_focus_y - y_diff/3, lowest_focus_y - y_diff/2]
+    |> Enum.map(fn(y) ->
+      left_bp_coord = breakpoint_coordinates(left_breakpoint, y)
+      right_bp_coord = breakpoint_coordinates(right_breakpoint, y)
+      ExVor.Geo.Helper.two_points_distance(left_bp_coord, right_bp_coord)  
+    end)
+    converging = before_distance > after_distance
+    debug "CE: #{left_breakpoint} & #{right_breakpoint} converging?: #{converging}"
+    converging
   end
 
   defp resolve_circle_triplet_order(new_arc_site, covering_arc_site, covering_covering_arc_site) do

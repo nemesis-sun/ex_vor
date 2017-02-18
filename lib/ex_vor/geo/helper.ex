@@ -27,4 +27,8 @@ defmodule ExVor.Geo.Helper do
       true -> {:error, :no_intersection}
     end
   end
+
+  def two_points_distance(%ExVor.Geo.Point{x: x1, y: y1}, %ExVor.Geo.Point{x: x2, y: y2}) do
+    :math.pow(:math.pow(x1-x2,2) + :math.pow(y1-y2,2), 0.5)
+  end
 end

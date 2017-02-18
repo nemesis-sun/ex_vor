@@ -17,3 +17,9 @@ defmodule ExVor.BeachLine.BreakPoint do
     id(bp1) == id(bp2)
   end
 end
+
+defimpl String.Chars, for: ExVor.BeachLine.BreakPoint do
+  def to_string(bp) do
+    "BreakPoint[#{ExVor.BeachLine.BreakPoint.id(bp)}]"
+  end
+end
